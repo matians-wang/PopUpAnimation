@@ -52,7 +52,6 @@ public abstract class PopViewBase extends FrameLayout implements AnimationView.O
 
     @Override
     public void onAnimatorOpenStart() {
-        System.out.println("startt");
         contentView.setVisibility(GONE);
         animationView.setVisibility(VISIBLE);
     }

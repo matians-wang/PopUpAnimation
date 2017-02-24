@@ -414,7 +414,6 @@ public class DiscView extends FrameLayout {
 
     private void initDiscBlankBackground() {
         discBlackgound = (ImageView) findViewById(R.id.ivDiscBlackgound);
-        System.out.println("discblackGround:"+discBlackgound);
         discBlackgound.setImageDrawable(getdiscBackgroundDrawable());
         int discMarginTop = (int)(DisplayUtils.SCALE_DISC_MARGIN_TOP * screenHeight);
         LayoutParams params = (LayoutParams)discBlackgound.getLayoutParams();
