@@ -133,6 +133,5 @@ public class MainActivity extends AppCompatActivity implements SlideLevelView.On
     @Override
     public void onSeekPosition(SlideLevelView.SlildePosition slildePosition) {
         int ordinal = slildePosition.ordinal();
-        System.out.println("origil==="+ordinal);
     }
 }

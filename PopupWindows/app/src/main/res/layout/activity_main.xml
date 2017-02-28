@@ -27,11 +27,12 @@
     <plugins.common.com.popupwindows.view.SlideLevelView
         android:id="@+id/slidelevelview"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        app:slide_base_background ="@mipmap/levelbg"
+        android:layout_height="wrap_content"
+        android:layout_margin="50dp"
+        android:background="@mipmap/levelbg"
         app:slide_item_background = "@mipmap/levelbtn"
         app:slide_item_width = "120dp"
-        app:slide_item_height = "50dp"
+        app:slide_item_height = "60dp"
         />
 
     <include

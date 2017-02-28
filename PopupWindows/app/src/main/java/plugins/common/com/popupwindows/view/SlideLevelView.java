@@ -3,23 +3,17 @@ package plugins.common.com.popupwindows.view;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
-
 import plugins.common.com.popupwindows.R;
 
 /**
@@ -28,25 +22,16 @@ import plugins.common.com.popupwindows.R;
 
 public class SlideLevelView extends View {
 
-    private int mScreenHeight;
-    private int mScreenWidth;
     private Drawable drawableBackground;
-    private int marginLeft;
-    private int marginRight;
-    private int marginTop;
-    private int marginBottom;
     private int mItemIndicatorWidth;
     private int mItemIndicatorHeight;
     private boolean mIsFirstDraw = true;
     private Drawable drawableItemBackground;
-    private int mPosition;
     private SlideIndicator mSlideIndicator;
     private boolean mIsSelected = false;
     private int contentW;
     private int contentH;
-    private boolean mFirstDraw = true;
     private Rect mRect;
-    private Paint mIndicatorPaint;
     private int mHalfItemWidth;
     private int mHalfItemHeight;
     private int mPerWidth;
@@ -54,6 +39,7 @@ public class SlideLevelView extends View {
     private boolean mIsAnimationPlay;
     private OnSeekPositionListener mOnSeekPositionListener;
     private int mHalfBackgroundHeight;
+    private static final int DEFALUT_TIME = 1000;
 
 
     public SlideLevelView(Context context) {
@@ -70,20 +56,16 @@ public class SlideLevelView extends View {
     }
 
     private void init(AttributeSet attrs, int defStyleAttr) {
-        mIsFirstDraw = true;
-        mIndicatorPaint = new Paint();
         mRect = new Rect();
-        mScreenWidth = getResources().getDisplayMetrics().widthPixels;
-        mScreenHeight = getResources().getDisplayMetrics().heightPixels;
+        drawableBackground = getBackground();
         TypedArray typedArray = getContext().obtainStyledAttributes(attrs, R.styleable.slidemoment, defStyleAttr, 0);
-        drawableBackground = typedArray.getDrawable(R.styleable.slidemoment_slide_base_background);
         drawableItemBackground = typedArray.getDrawable(R.styleable.slidemoment_slide_item_background);
-        marginLeft = (int)typedArray.getDimension(R.styleable.slidemoment_slide_base_margin_left, 0.0f);
-        marginRight = (int)typedArray.getDimension(R.styleable.slidemoment_slide_base_margin_right, 0.0f);
-        marginTop = (int)typedArray.getDimension(R.styleable.slidemoment_slide_base_margin_top, 0.0f);
-        marginBottom = (int)typedArray.getDimension(R.styleable.slidemoment_slide_base_margin_bottom, 0.0f);
-        mItemIndicatorWidth = (int) (typedArray.getDimension(R.styleable.slidemoment_slide_item_width, 0.0f));
-        mItemIndicatorHeight = (int) typedArray.getDimension(R.styleable.slidemoment_slide_item_height, 0.0f);
+        int itemWidth = (int) (typedArray.getDimension(R.styleable.slidemoment_slide_item_width, 0.0f));
+        mItemIndicatorWidth = itemWidth == 0 ? drawableItemBackground.getIntrinsicWidth() : itemWidth;
+        int itemHeight = (int) typedArray.getDimension(R.styleable.slidemoment_slide_item_height, 0.0f);
+        mItemIndicatorHeight = itemHeight == 0 ? drawableItemBackground.getIntrinsicHeight() : itemHeight;
+        mHalfItemWidth = mItemIndicatorWidth /2;
+        mHalfItemHeight = mItemIndicatorHeight/2;
         mSlideIndicator = new SlideIndicator(mItemIndicatorWidth, mItemIndicatorHeight);
         mSlideIndicator.setSlideDrawable(drawableItemBackground);
         typedArray.recycle();
@@ -91,49 +73,58 @@ public class SlideLevelView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int widthSize =  MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
-        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
         contentW = widthSize - getPaddingLeft() - getPaddingRight();
         contentH = heightSize - getPaddingTop() - getPaddingBottom();
+        ViewGroup.LayoutParams layoutParams = getLayoutParams();
+        int heightMeasure;
+        int widthMeasure;
+        if (layoutParams == null) {
+            throw  new RuntimeException("layoutparams is null");
+        }
+        if (layoutParams.height == ViewGroup.LayoutParams.MATCH_PARENT) {
+            //matchparent
+            heightMeasure = MeasureSpec.makeMeasureSpec(contentH, MeasureSpec.EXACTLY);
+        } else if (layoutParams.height == ViewGroup.LayoutParams.WRAP_CONTENT) {
+            //wrapcontent, we just follow drawable dip height
+            heightMeasure = MeasureSpec.makeMeasureSpec(drawableBackground.getIntrinsicHeight(), MeasureSpec.AT_MOST);
+        } else {
+            //exactly dip size
+            heightMeasure = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
+            //如果我们指定dip值，那么就以dip作为高度基准，来决定我们的indicator，paddingtop值。
+            mHalfBackgroundHeight = layoutParams.height /2;
+        }
+        if (layoutParams.width == ViewGroup.LayoutParams.MATCH_PARENT) {
+            widthMeasure = MeasureSpec.makeMeasureSpec(contentW, MeasureSpec.EXACTLY);
+        } else if (layoutParams.width == ViewGroup.LayoutParams.WRAP_CONTENT) {
+            widthMeasure = MeasureSpec.makeMeasureSpec(drawableBackground.getIntrinsicWidth(), MeasureSpec.AT_MOST);
+        } else {
+            widthMeasure = MeasureSpec.makeMeasureSpec(layoutParams.width, MeasureSpec.EXACTLY);
+        }
+        super.onMeasure(widthMeasure,heightMeasure);
     }
 
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        mPerWidth = (w - marginLeft - marginRight) / SlildePosition.values().length;
+        mPerWidth = (w - getPaddingLeft() - getPaddingRight()) / SlildePosition.values().length;
         mHalfBackgroundHeight = drawableBackground.getIntrinsicHeight()/2;
-        System.out.println("back==="+drawableBackground.getIntrinsicHeight());
-        System.out.println("backMin==="+drawableBackground.getMinimumHeight());
         seekPosition();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (mFirstDraw) {
-            Rect rectBackground = new Rect();
-            rectBackground.set(marginLeft, marginTop, contentW - marginRight, contentH - marginBottom);
-            drawableBackground.setBounds(rectBackground);
-            mFirstDraw = false;
-            mHalfItemWidth = mItemIndicatorWidth /2;
-            mHalfItemHeight = mItemIndicatorHeight/2;
-        }
-        drawableBackground.draw(canvas);
-        mRect.set(mSlideIndicator.getCurX() , marginTop+ mHalfBackgroundHeight - mHalfItemHeight, mSlideIndicator.getCurX() + mItemIndicatorWidth, marginTop + mHalfBackgroundHeight+ mHalfItemHeight);
-
+        mRect.set(mSlideIndicator.getCurX() , getPaddingTop()+ mHalfBackgroundHeight - mHalfItemHeight, mSlideIndicator.getCurX() + mItemIndicatorWidth, getPaddingTop() + mHalfBackgroundHeight+ mHalfItemHeight);
         mSlideIndicator.getSlideDrawble().setBounds(mRect);
         mSlideIndicator.getSlideDrawble().draw(canvas);
-
     }
 
     public void setItemPosition(SlildePosition slildePosition) {
-        //this.mPosition = position;
         mClosedIndex = slildePosition;
-        startAnimation(mSlideIndicator, 1000, slildePosition);
+        startAnimation(mSlideIndicator, DEFALUT_TIME, slildePosition);
     }
 
 
@@ -160,16 +151,19 @@ public class SlideLevelView extends View {
                 break;
 
         }
-        invalidate();
         if (mIsSelected) {
-
+            invalidate();
         }
         return true;
     }
 
     private void reset() {
-        mClosedIndex = getClosedIndex(mSlideIndicator);
-        startAnimation(mSlideIndicator,1000, mClosedIndex);
+        mIsSelected = false;
+        if (mSlideIndicator.getEnableTouch()) {
+            mClosedIndex = getClosedIndex(mSlideIndicator);
+            startAnimation(mSlideIndicator,DEFALUT_TIME, mClosedIndex);
+        }
+        mSlideIndicator.setEnableTouch(false);
     }
 
     public interface OnSeekPositionListener {
@@ -186,23 +180,22 @@ public class SlideLevelView extends View {
     }
 
     private void move(int x) {
-        if ( x <= contentW - mItemIndicatorWidth) {
-            mSlideIndicator.setCurX(x);
-        }
         if (mSlideIndicator.getEnableTouch()) {
-
-            return;
+            //因为png图片的不规整，png外围有透明部分，*1.5是除去png右边透明部分。*0.5除去png左边透明部分
+            if ( x > - mHalfItemWidth *0.5 && x <= contentW - mHalfItemWidth *1.5) {
+                mSlideIndicator.setCurX(x);
+            }
         }
     }
 
     public int getSlideDistance(SlildePosition slildePosition) {
         switch (slildePosition) {
             case LEFT:
-                return getPaddingLeft()  + mPerWidth *0;
+                return (int) (getPaddingLeft()  + mPerWidth *0 - mHalfItemWidth*0.5);
             case MIDDLE:
                 return (int)(getPaddingLeft()  + mPerWidth * 1.5f - mHalfItemWidth);
             case RIGHT:
-                return getPaddingLeft()  + mPerWidth *3 - mItemIndicatorWidth;
+                return (int) (getPaddingLeft()  + mPerWidth *3 - mHalfItemWidth *1.5);//*1.5是除去png透明部分。
         }
         return 0;
     }
@@ -254,11 +247,6 @@ public class SlideLevelView extends View {
 
     private boolean checkPoint(int x, int y) {
         boolean contains = mSlideIndicator.getRect().contains(x, y);
-        int right = mSlideIndicator.getRect().right;
-        int left = mSlideIndicator.getRect().left;
-        int top = mSlideIndicator.getRect().top;
-        int bottom = mSlideIndicator.getRect().bottom;
-        System.out.println("right =="+right+"left"+left+"top=="+top+"bottom=="+bottom);
         if (contains) {
             //命中目标,设置目标可以进行拖动
             mSlideIndicator.setEnableTouch(true);
@@ -272,7 +260,7 @@ public class SlideLevelView extends View {
         private int mSlideWidth;
         private int mSlideHeight;
         private Drawable mSlideDrawable;
-        private int mCurX;
+        private int mCurX = (int) (0 - mHalfItemWidth * 0.5); //*0.5除去png左边透明部分
         private int mCurY;
         private Rect mRect = new Rect();
         private boolean mEnableTouch;
@@ -291,7 +279,8 @@ public class SlideLevelView extends View {
         }
 
         public Rect getRect() {
-            mRect.set(mCurX-mSlideWidth, mCurY - mSlideHeight, mCurX+ mSlideWidth, mCurY+mSlideHeight);
+            System.out.println("mCurX=="+mCurX);
+            mRect.set(mCurX, mCurY, mCurX+ mSlideWidth, mCurY+mSlideHeight);
             return mRect;
         }
 

@@ -5,18 +5,9 @@
             <enum name="horizontal" value="1"/>
             <enum name="vertical" value="2"/>
         </attr>
-        <attr name="slide_base_margin_left" format="dimension|reference"/>
-        <attr name="slide_base_margin_right" format="dimension|reference"/>
-        <attr name="slide_base_margin_top" format="dimension|reference"/>
-        <attr name="slide_base_margin_bottom" format="dimension|reference"/>
-        <attr name="slide_base_background" format="color|reference"/>
         <attr name="slide_item_background" format="color|reference"/>
         <attr name="slide_item_width" format="dimension|reference"/>
         <attr name="slide_item_height" format="dimension|reference"/>
-        <attr name="phased_anchor_width" format="dimension|reference"/>
-        <attr name="phased_anchor_height" format="dimension|reference"/>
-        <attr name="phased_draw_on_off" format="boolean"/>
-        <attr name="phased_fix_point" format="boolean"/>
     </declare-styleable>
 
     <declare-styleable name="MySeekBar">
