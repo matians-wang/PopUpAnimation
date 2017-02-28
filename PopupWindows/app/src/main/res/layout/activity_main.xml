@@ -6,10 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@mipmap/ic_blackground"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="plugins.common.com.popupwindows.MainActivity">
 
     <Button
@@ -29,24 +25,22 @@
     </plugins.common.com.popupwindows.ListPopView>
 
     <plugins.common.com.popupwindows.view.SlideLevelView
+        android:id="@+id/slidelevelview"
         android:layout_width="match_parent"
         android:layout_height="100dp"
         app:slide_base_background ="@mipmap/levelbg"
         app:slide_item_background = "@mipmap/levelbtn"
         app:slide_item_width = "120dp"
-        app:slide_item_height = "80dp"
+        app:slide_item_height = "50dp"
         />
 
-    <plugins.common.com.popupwindows.view.MySeekBar
+    <include
+        android:id="@+id/select_level"
+        layout="@layout/select_slidelevel"
         android:layout_width="match_parent"
-        android:layout_height="20dp"
-        app:point_count = "3"
-        android:layerType="software"
+        android:layout_height="90dp"
+        android:layout_marginTop="80dp"/>
 
-        app:back_line_color = "#ff5636"
-        app:indicator_line_color = "#ff5636"
-        app:indicator_color = "#ff5636"
-        />
 
     <include
         android:id="@+id/discview"

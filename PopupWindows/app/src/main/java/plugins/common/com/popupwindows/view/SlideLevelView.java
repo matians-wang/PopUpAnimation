@@ -3,11 +3,14 @@ package plugins.common.com.popupwindows.view;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -47,6 +50,10 @@ public class SlideLevelView extends View {
     private int mHalfItemWidth;
     private int mHalfItemHeight;
     private int mPerWidth;
+    private SlildePosition mClosedIndex = SlildePosition.MIDDLE;
+    private boolean mIsAnimationPlay;
+    private OnSeekPositionListener mOnSeekPositionListener;
+    private int mHalfBackgroundHeight;
 
 
     public SlideLevelView(Context context) {
@@ -91,15 +98,17 @@ public class SlideLevelView extends View {
         int heightMode = MeasureSpec.getMode(heightMeasureSpec);
         contentW = widthSize - getPaddingLeft() - getPaddingRight();
         contentH = heightSize - getPaddingTop() - getPaddingBottom();
-
     }
 
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        mPerWidth = (w -getPaddingLeft() - getPaddingRight() - mItemIndicatorWidth )/3;
-
+        mPerWidth = (w - marginLeft - marginRight) / SlildePosition.values().length;
+        mHalfBackgroundHeight = drawableBackground.getIntrinsicHeight()/2;
+        System.out.println("back==="+drawableBackground.getIntrinsicHeight());
+        System.out.println("backMin==="+drawableBackground.getMinimumHeight());
+        seekPosition();
     }
 
     @Override
@@ -114,17 +123,17 @@ public class SlideLevelView extends View {
             mHalfItemHeight = mItemIndicatorHeight/2;
         }
         drawableBackground.draw(canvas);
-        System.out.println("cux=="+mSlideIndicator.getCurX());
-        System.out.println("marginTop===="+marginTop);
-        mRect.set(mSlideIndicator.getCurX()- mHalfItemWidth + 40, marginTop+ 20, mSlideIndicator.getCurX() + mHalfItemWidth, marginTop + mItemIndicatorHeight);
+        mRect.set(mSlideIndicator.getCurX() , marginTop+ mHalfBackgroundHeight - mHalfItemHeight, mSlideIndicator.getCurX() + mItemIndicatorWidth, marginTop + mHalfBackgroundHeight+ mHalfItemHeight);
 
         mSlideIndicator.getSlideDrawble().setBounds(mRect);
         mSlideIndicator.getSlideDrawble().draw(canvas);
 
     }
 
-    public void setItemPosition(int position) {
-        this.mPosition = position;
+    public void setItemPosition(SlildePosition slildePosition) {
+        //this.mPosition = position;
+        mClosedIndex = slildePosition;
+        startAnimation(mSlideIndicator, 1000, slildePosition);
     }
 
 
@@ -133,6 +142,9 @@ public class SlideLevelView extends View {
     }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (mIsAnimationPlay) {
+            return true;
+        }
         int x = (int)event.getX();
         int y = (int)event.getY();
         switch (event.getAction()) {
@@ -156,14 +168,25 @@ public class SlideLevelView extends View {
     }
 
     private void reset() {
+        mClosedIndex = getClosedIndex(mSlideIndicator);
+        startAnimation(mSlideIndicator,1000, mClosedIndex);
+    }
 
-        SlildePosition closedIndex = getClosedIndex(mSlideIndicator);
-        System.out.println("closeIndex==="+closedIndex);
-        startAnimation(mSlideIndicator,1000,closedIndex);
+    public interface OnSeekPositionListener {
+        void onSeekPosition(SlildePosition slildePosition);
+    }
+
+    public void setOnSeekPositionListener(OnSeekPositionListener onSeekPositionListener) {
+        this.mOnSeekPositionListener = onSeekPositionListener;
+    }
+
+    private void seekPosition() {
+        if (mOnSeekPositionListener != null)
+            mOnSeekPositionListener.onSeekPosition(mClosedIndex);
     }
 
     private void move(int x) {
-        if ( x < contentW) {
+        if ( x <= contentW - mItemIndicatorWidth) {
             mSlideIndicator.setCurX(x);
         }
         if (mSlideIndicator.getEnableTouch()) {
@@ -175,11 +198,11 @@ public class SlideLevelView extends View {
     public int getSlideDistance(SlildePosition slildePosition) {
         switch (slildePosition) {
             case LEFT:
-                return getPaddingLeft() + mHalfItemWidth + mPerWidth *0;
+                return getPaddingLeft()  + mPerWidth *0;
             case MIDDLE:
-                return getPaddingLeft() + mHalfItemWidth + mPerWidth * 1;
+                return (int)(getPaddingLeft()  + mPerWidth * 1.5f - mHalfItemWidth);
             case RIGHT:
-                return getPaddingLeft() + mHalfItemWidth + mPerWidth *2;
+                return getPaddingLeft()  + mPerWidth *3 - mItemIndicatorWidth;
         }
         return 0;
     }
@@ -187,34 +210,44 @@ public class SlideLevelView extends View {
     private SlildePosition getClosedIndex(SlideIndicator slideIndicator) {
         int curX = slideIndicator.getCurX();
         int distance = Integer.MAX_VALUE;
-        int index = 0;
-        for (int i = 0; i< SlildePosition.values().length; i++) {
-
-            System.out.println("i==="+i);
+        String slidePosition = "";
+        for (SlildePosition slildePosition : SlildePosition.values()) {
+            int abs = Math.abs(curX - getSlideDistance(slildePosition));
+            if (abs <= distance) {
+                distance = abs;
+                slidePosition = slildePosition.name();
+            }
         }
-        return SlildePosition.MIDDLE;
+        return SlildePosition.valueOf(slidePosition);
     }
 
     private void startAnimation(SlideIndicator slideIndicator, long duration, SlildePosition slildePosition) {
-        System.out.println("getSlideDistance(slildePosition)==="+getSlideDistance(slildePosition));
-        System.out.println("getCurx=="+slideIndicator.getCurX());
-        ObjectAnimator objectAnimator = ObjectAnimator.ofFloat(slideIndicator, "mCurX", slideIndicator.getCurX(),getSlideDistance(slildePosition));
+        ObjectAnimator objectAnimator = ObjectAnimator.ofInt(slideIndicator, "curX", slideIndicator.getCurX(),getSlideDistance(slildePosition));
         objectAnimator.setDuration(duration);
         objectAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
         objectAnimator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
-System.out.println("animation start");
+                mIsAnimationPlay = true;
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-
+                SlideIndicator indicator = (SlideIndicator)((ObjectAnimator) animation).getTarget();
+                indicator.setCurX(getSlideDistance(mClosedIndex));
+                mIsAnimationPlay = false;
+                seekPosition();
             }
 
 
+        });
+        objectAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                invalidate();
+            }
         });
         objectAnimator.start();
     }
@@ -234,25 +267,6 @@ System.out.println("animation start");
         return false;
     }
 
-
-    private Bitmap getLargeBitmap(int resId, int picSize) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(getResources(),resId,options);
-        int simpleSize = options.outWidth /picSize;
-        if (simpleSize > 1) {
-            simpleSize = 1;
-        }
-        options.inSampleSize = simpleSize;
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
-        options.inJustDecodeBounds = false;
-        return Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), resId, options), picSize, picSize, true);
-    }
-
-    private Bitmap getSmallBitmap(int resId) {
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), resId);
-        return Bitmap.createScaledBitmap(bitmap, mScreenWidth-50, bitmap.getHeight(), false);
-    }
 
     public class SlideIndicator {
         private int mSlideWidth;

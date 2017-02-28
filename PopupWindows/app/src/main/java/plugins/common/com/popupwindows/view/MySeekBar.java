@@ -271,7 +271,7 @@ public class MySeekBar extends View implements
     @Override
     public void onAnimationUpdate(ValueAnimator animation) {
         // 每次修改完成属性 就应该刷新当前View
-        //invalidate();
+        invalidate();
     } // addListener动画回调部分
 
     @Override
