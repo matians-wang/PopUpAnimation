@@ -72,19 +72,19 @@ public class MainActivity extends AppCompatActivity implements SlideLevelView.On
 
         @Override
         public void onClick(View arg0) {
-            switch (arg0.getId()) {
-                case R.id.level1:
-                    System.out.println("click");
-                    slideLevelView.setItemPosition(SlideLevelView.SlildePosition.LEFT);
+            if (!slideLevelView.mIsAnimationPlay) {
+                switch (arg0.getId()) {
+                    case R.id.level1:
+                        slideLevelView.setItemPosition(SlideLevelView.SlildePosition.LEFT);
+                        break;
+                    case R.id.level2:
+                        slideLevelView.setItemPosition(SlideLevelView.SlildePosition.MIDDLE);
+                        break;
+                    case R.id.level3:
+                        slideLevelView.setItemPosition(SlideLevelView.SlildePosition.RIGHT);
+                        break;
 
-                    break;
-                case R.id.level2:
-                    slideLevelView.setItemPosition(SlideLevelView.SlildePosition.MIDDLE);
-                    break;
-                case R.id.level3:
-                    slideLevelView.setItemPosition(SlideLevelView.SlildePosition.RIGHT);
-                    break;
-
+                }
             }
         }
     };

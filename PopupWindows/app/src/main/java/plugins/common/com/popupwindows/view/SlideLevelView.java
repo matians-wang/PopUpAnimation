@@ -14,6 +14,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
+
+
 import plugins.common.com.popupwindows.R;
 
 /**
@@ -25,7 +27,6 @@ public class SlideLevelView extends View {
     private Drawable drawableBackground;
     private int mItemIndicatorWidth;
     private int mItemIndicatorHeight;
-    private boolean mIsFirstDraw = true;
     private Drawable drawableItemBackground;
     private SlideIndicator mSlideIndicator;
     private boolean mIsSelected = false;
@@ -36,10 +37,11 @@ public class SlideLevelView extends View {
     private int mHalfItemHeight;
     private int mPerWidth;
     private SlildePosition mClosedIndex = SlildePosition.MIDDLE;
-    private boolean mIsAnimationPlay;
+    public boolean mIsAnimationPlay;
     private OnSeekPositionListener mOnSeekPositionListener;
     private int mHalfBackgroundHeight;
     private static final int DEFALUT_TIME = 1000;
+    private ObjectAnimator objectAnimator;
 
 
     public SlideLevelView(Context context) {
@@ -129,7 +131,28 @@ public class SlideLevelView extends View {
 
 
     public enum SlildePosition {
-        LEFT,MIDDLE,RIGHT;
+        LEFT(1),MIDDLE(2),RIGHT(3);
+        private int slidePosition;
+        private SlildePosition(int position) {
+            this.slidePosition = position;
+        }
+
+        public static SlildePosition valueSlideOf(int slidePosition) {
+            switch (slidePosition) {
+                case 1:
+                    return LEFT;
+                case 2:
+                    return MIDDLE;
+                case 3:
+                    return RIGHT;
+                default:
+                    return MIDDLE;
+            }
+        }
+
+        public int getPositionValue() {
+            return this.slidePosition;
+        }
     }
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -215,7 +238,10 @@ public class SlideLevelView extends View {
     }
 
     private void startAnimation(SlideIndicator slideIndicator, long duration, SlildePosition slildePosition) {
-        ObjectAnimator objectAnimator = ObjectAnimator.ofInt(slideIndicator, "curX", slideIndicator.getCurX(),getSlideDistance(slildePosition));
+        if (objectAnimator != null) {
+            objectAnimator.cancel();
+        }
+        objectAnimator = ObjectAnimator.ofInt(slideIndicator, "curX", slideIndicator.getCurX(),getSlideDistance(slildePosition));
         objectAnimator.setDuration(duration);
         objectAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
         objectAnimator.addListener(new AnimatorListenerAdapter() {
@@ -279,7 +305,6 @@ public class SlideLevelView extends View {
         }
 
         public Rect getRect() {
-            System.out.println("mCurX=="+mCurX);
             mRect.set(mCurX, mCurY, mCurX+ mSlideWidth, mCurY+mSlideHeight);
             return mRect;
         }
